@@ -25,11 +25,19 @@ DATABASE_PATH = Path(os.getenv("DATABASE_PATH", "./data/crewai_web.db"))
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
 
 
-def get_connection() -> sqlite3.Connection:
+@contextmanager
+def get_connection():
     DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(DATABASE_PATH)
     connection.row_factory = sqlite3.Row
-    return connection
+    try:
+        yield connection
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
 
 
 def initialize_database() -> None:
@@ -61,10 +69,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-if SESSION_SECRET:
-    app.add_middleware(
+app.add_middleware(
         SessionMiddleware,
-        secret_key=SESSION_SECRET,
+        # Keep session access well-defined even when configuration is missing.
+        # Protected endpoints still reject requests until SESSION_SECRET is set.
+        secret_key=SESSION_SECRET or secrets.token_urlsafe(32),
         session_cookie="crewai_web_session",
         same_site="lax",
         https_only=COOKIE_SECURE,
