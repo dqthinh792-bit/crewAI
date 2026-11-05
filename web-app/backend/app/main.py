@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import secrets
 import sqlite3
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated, Any
@@ -70,15 +70,15 @@ app = FastAPI(
 )
 
 app.add_middleware(
-        SessionMiddleware,
-        # Keep session access well-defined even when configuration is missing.
-        # Protected endpoints still reject requests until SESSION_SECRET is set.
-        secret_key=SESSION_SECRET or secrets.token_urlsafe(32),
-        session_cookie="crewai_web_session",
-        same_site="lax",
-        https_only=COOKIE_SECURE,
-        max_age=60 * 60 * 8,
-    )
+    SessionMiddleware,
+    # Keep session access well-defined even when configuration is missing.
+    # Protected endpoints still reject requests until SESSION_SECRET is set.
+    secret_key=SESSION_SECRET or secrets.token_urlsafe(32),
+    session_cookie="crewai_web_session",
+    same_site="lax",
+    https_only=COOKIE_SECURE,
+    max_age=60 * 60 * 8,
+)
 
 
 class LoginRequest(BaseModel):
